@@ -38,8 +38,8 @@ options:
     choices:
       - present
       - absent
-	  - started
-	  - stopped
+      - started
+      - stopped
     default: present
   memory:
     description:
@@ -64,7 +64,7 @@ options:
   diskpath:
     description:
       - Specify path of VHD/VHDX file for VM
-	  - If the file exists it will be attached, if not then a new one will be created
+      - If the file exists it will be attached, if not then a new one will be created
     require: false
     default: null
 '''
