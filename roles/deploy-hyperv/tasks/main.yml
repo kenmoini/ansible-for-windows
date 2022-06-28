@@ -1,0 +1,77 @@
+---
+# tasks file for deploy-hyperv
+
+# Find modules with: Find-DscResource -ModuleName "*sql*"
+
+- name: Install needed modules and features
+  block:
+    - name: Install needed DSC modules
+      community.windows.win_psmodule:
+        name: "{{ module_item }}"
+        state: present
+      loop:
+        - StorageDsc
+        - ServerManager
+        - xNetworking
+        - xHyper-V
+      loop_control:
+        loop_var: module_item
+        label: "{{ module_item }}"
+      tags:
+        - install_dsc_modules
+      register: r_install_dsc_modules
+
+    - name: Reboot if required
+      win_reboot:
+        msg: "Server config in progress; rebooting..."
+      when: r_install_dsc_modules.reboot_required is defined and r_install_dsc_modules.reboot_required|bool
+
+    - name: Install needed Windows Server Features
+      ansible.windows.win_feature:
+        state: present
+        name: "{{ feature_item.name }}"
+        include_sub_features: "{{ feature_item.sub_features | default(omit) }}"
+        include_management_tools: "{{ feature_item.management_tools | default(omit) }}"
+      loop:
+        - name: DSC-Service
+        - name: NET-Framework-Core
+        - name: NET-Framework-Features
+        - name: NET-Framework-45-Features
+          sub_features: true
+        - name: WAS
+          sub_features: true
+        - name: Hyper-V
+          sub_features: true
+          management_tools: true
+      loop_control:
+        loop_var: feature_item
+        label: "{{ feature_item.name }}"
+      tags:
+        - install_features
+      register: r_install_features
+
+    - name: Reboot if required
+      win_reboot:
+        msg: "Server config in progress; rebooting..."
+      when: r_install_features.reboot_required is defined and r_install_features.reboot_required|bool
+
+  tags:
+    - install_prerequisites
+
+- name: Start and enable the HyperV Service
+  win_service:
+    name: vmms
+    state: started
+    start_mode: auto
+  tags:
+    - start_service
+
+- name: Set up VirtualSwitch
+  win_hyperv_vmswitch:
+    name: VMNetwork
+    state: present
+    adapterName: NIC4
+    allowManagementOS: enabled
+  retries: 3
+  delay: 10
+

@@ -1,0 +1,19 @@
+---
+- name: Create a VM on Hyper-V
+  hosts: all
+  vars:
+    vms:
+      - vm_name: sno-ocp
+        base_vhdx_path: C:\ProgramData\Microsoft\Windows\Hyper-V\openshift\
+        vhdx_size: 130GB
+  
+  tasks:
+
+    - name: Create HyperV VM
+      include_role:
+        name: create-hyperv-vm
+      loop: "{{ vms }}"
+      vars:
+        vm_name: "{{ item.vm_name }}"
+        base_vhdx_path: "{{ item.base_vhdx_path }}"
+        vhdx_size: "{{ item.vhdx_size }}"

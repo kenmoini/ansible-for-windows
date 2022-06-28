@@ -1,0 +1,20 @@
+---
+# tasks file for create-hyperv-vm
+
+- name: Check to make sure the target base_vhdx_path exists
+  ansible.windows.win_stat:
+    path: "{{ base_vhdx_path }}"
+  register: base_vhdx_path_info
+
+- name: Create the base VHDX path if it does not exist
+  when: not base_vhdx_path_info.stat.exists
+  ansible.windows.win_file:
+    path: "{{ base_vhdx_path }}"
+    state: directory
+
+- name: Create the VM VHDX
+  win_hyperv_vhd:
+    path: "{{ base_vhdx_path }}{{ vm_name }}.vhdx"
+    state: present
+    size: "{{ vhdx_size }}"
+    dynamicExpansion: true
